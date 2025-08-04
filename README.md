@@ -1,3 +1,14 @@
+
+# Branche production
+git checkout -b main
+git push -u origin main
+
+# Branche recette (dev)
+git checkout -b develop
+git push -u origin develop
+
+
+
 # flutter_application_1
 
 A new Flutter project.
