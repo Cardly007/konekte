@@ -349,6 +349,41 @@ from pydantic import BaseModel
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import List
 
+
+# Assurez-vous que ces modèles sont importés de models.py
+from .models import (
+    User, UserCreate, UserRead, Like, Match, Message,
+    Preference, LocationUpdate, Photo, PhotoRead # Ajout des nouveaux modèles/structures
+)
+from .database import get_session
+# Assurez-vous que votre AuthService existe
+# from .services.auth_service import AuthService
+import os
+import io # Pour lire le fichier uploadé
+from dotenv import load_dotenv # Import pour charger les variables d'environnement
+import cloudinary
+import cloudinary.uploader
+from fastapi import File, UploadFile, Depends, HTTPException, status
+from pydantic import BaseModel
+from sqlmodel import Session, select, func
+from .models import User, UserRead, Photo, PhotoRead, LocationUpdate # Assurez-vous que PhotoRead existe
+
+
+# --- 1. Configuration ---
+load_dotenv()
+
+# Configuration Cloudinary
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
+)
+
+# Modèle pour la réponse d'upload
+class PhotoUploadResponse(BaseModel):
+    photo_id: int
+    url: str
+
 # -----------------------
 # Configurations JWT
 # -----------------------
@@ -409,32 +444,113 @@ init_db()
 # -----------------------
 
 # ✅ Enregistrement utilisateur
-@app.post("/api/register")
-def register_user(user: User):
-    with Session(engine) as session:
-        existing = session.exec(select(User).where(User.email == user.email)).first()
-        if existing:
-            raise HTTPException(status_code=400, detail="Email déjà utilisé.")
-        user.password_hash = bcrypt.hash(user.password_hash)
-        session.add(user)
-        session.commit()
-        session.refresh(user)
-        return {"message": "Utilisateur créé avec succès", "user_id": user.id}
+# @app.post("/api/register")
+# def register_user(user: User):
+#     with Session(engine) as session:
+#         existing = session.exec(select(User).where(User.email == user.email)).first()
+#         if existing:
+#             raise HTTPException(status_code=400, detail="Email déjà utilisé.")
+#         user.password_hash = bcrypt.hash(user.password_hash)
+#         session.add(user)
+#         session.commit()
+#         session.refresh(user)
+#         return {"message": "Utilisateur créé avec succès", "user_id": user.id}
+@app.post("api/register", response_model=UserRead)
+def register_user(user_data: UserCreate, session: Session = Depends(get_session)):
+    """
+    Crée un nouvel utilisateur et initialise ses préférences de matching par défaut.
+    """
+    # 1. Vérification de l'existence de l'utilisateur
+    existing_user = session.exec(select(User).where(User.email == user_data.email)).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+        
+    # 2. Hachage du mot de passe
+    hashed_password = AuthService.get_password_hash(user_data.password)
+
+    # 3. Création de l'utilisateur avec les nouveaux champs (birthdate, nom, etc.)
+    db_user = User(
+        nom=user_data.nom,
+        username=user_data.username,
+        email=user_data.email,
+        description=user_data.description,
+        hashed_password=hashed_password,
+        birthdate=user_data.birthdate,
+        last_seen=datetime.utcnow() 
+    )
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user) # Important pour obtenir le nouvel ID
+
+    # 4. Création des préférences par défaut (relatif au nouvel User.id)
+    default_prefs = Preference(
+        user_id=db_user.id,
+        min_age=18,
+        max_age=55,
+        max_distance_km=50,
+        target_gender="everyone"
+    )
+    session.add(default_prefs)
+    session.commit() # Commit des préférences
+    
+    # NOTE: L'objet db_user sera automatiquement rafraîchi par SQLAlchemy/SQLModel
+    # s'il inclut la relation 'photos' et 'preference', même si elles sont vides pour l'instant.
+    return db_user
 
 # ✅ Authentification : retourne un token JWT
 @app.post("/api/token")
-def login_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    with Session(engine) as session:
-        user = session.exec(select(User).where(User.email == form_data.username)).first()
-        if not user or not bcrypt.verify(form_data.password, user.password_hash):
-            raise HTTPException(status_code=401, detail="Identifiants invalides")
-        token = create_access_token(data={"sub": str(user.id)})
-        return {"access_token": token, "token_type": "bearer"}
+# def login_token(form_data: OAuth2PasswordRequestForm = Depends()):
+#     with Session(engine) as session:
+#         user = session.exec(select(User).where(User.email == form_data.username)).first()
+#         if not user or not bcrypt.verify(form_data.password, user.password_hash):
+#             raise HTTPException(status_code=401, detail="Identifiants invalides")
+#         token = create_access_token(data={"sub": str(user.id)})
+#         return {"access_token": token, "token_type": "bearer"}
+def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session: Session = Depends(get_session)
+):
+    user = AuthService.authenticate_user(session, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    # --- MISE À JOUR DE LAST_SEEN ---
+    user.last_seen = datetime.utcnow()
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    # --------------------------------
+
+    access_token = AuthService.create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
 
 # ✅ Retourne l'utilisateur connecté
 @app.get("/api/me")
-def read_users_me(current_user: User = Depends(get_current_user)):
+# def read_users_me(current_user: User = Depends(get_current_user)):
+#     return current_user
+
+def read_users_me(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère le profil complet de l'utilisateur connecté, y compris ses photos.
+    """
+    # SQLModel gère la jointure et l'inclusion des relations si les modèles sont bien configurés.
+    # Assurez-vous que les relations sont chargées (si nécessaire pour UserRead)
+    
+    # Note : Si vous utilisez SQLModel avec `response_model=UserRead`, 
+    # et que UserRead inclut des relations (comme `photos`), vous pouvez avoir besoin
+    # d'utiliser `selectinload(User.photos)` pour charger la relation
+    # si les objets ne sont pas chargés par défaut.
+    
     return current_user
+
 
 # ✅ Liste tous les profils (peut être publique ou protégée)
 @app.get("/api/profils")
@@ -443,6 +559,9 @@ def get_profils():
         profils = session.exec(select(User)).all()
         random.shuffle(profils) # Mélange les profils pour la diversité
         return profils
+
+
+
 
 # ✅ Enregistre une interaction (like/dislike/superlike)
 # @app.post("/api/interact")
@@ -751,3 +870,141 @@ def get_conversations(current_user: User = Depends(get_current_user)):
 
         return convs
 
+#----------------------
+# Gestion photos
+# ---------------------
+@app.post("/users/me/photos", response_model=PhotoUploadResponse)
+async def upload_user_photo(
+    file: UploadFile = File(...),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(AuthService.get_current_active_user)
+):
+    """
+    Téléverse un fichier image vers Cloudinary et enregistre l'URL en BDD.
+    """
+    user_id = current_user.id
+    
+    # 1. Vérification du nombre de photos (limite de 6 comme sur Tinder)
+    photo_count = session.exec(select(func.count()).select_from(Photo).where(Photo.user_id == user_id)).one()
+    if photo_count >= 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Maximum of 6 photos allowed per user."
+        )
+
+    try:
+        # 2. Upload vers Cloudinary
+        upload_result = cloudinary.uploader.upload(
+            file.file,
+            folder=f"konekte/users/{user_id}", # Organise les images par utilisateur
+            resource_type="image",
+            overwrite=True,
+            unique_filename=True
+        )
+        
+        secure_url = upload_result.get("secure_url")
+        
+        # 3. Déterminer l'ordre
+        # Récupère le max(order) et ajoute 1. Si pas de photo, commence à 1.
+        max_order_result = session.exec(
+            select(func.max(Photo.order)).where(Photo.user_id == user_id)
+        ).first()
+        new_order = (max_order_result if max_order_result is not None else 0) + 1
+        
+        # 4. Enregistrement en base de données
+        new_photo = Photo(
+            user_id=user_id,
+            url=secure_url,
+            order=new_order
+        )
+        session.add(new_photo)
+        session.commit()
+        session.refresh(new_photo)
+
+        return PhotoUploadResponse(photo_id=new_photo.id, url=new_photo.url)
+
+    except Exception as e:
+        print(f"Cloudinary Upload Error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error uploading photo: {e}"
+        )
+
+# BackEnd/main.py
+
+@app.delete("/users/me/photos/{photo_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user_photo(
+    photo_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(AuthService.get_current_active_user)
+):
+    """Supprime une photo de Cloudinary et de la BDD."""
+    
+    # 1. Trouver la photo
+    photo = session.exec(
+        select(Photo)
+        .where(Photo.id == photo_id)
+        .where(Photo.user_id == current_user.id)
+    ).first()
+    
+    if not photo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Photo non trouvée ou n'appartient pas à l'utilisateur."
+        )
+    
+    try:
+        # 2. Extraire l'ID public Cloudinary
+        # L'URL est : https://res.cloudinary.com/<cloud_name>/image/upload/.../konekte/users/ID/NOM_FICHIER.ext
+        # L'ID public est : 'konekte/users/ID/NOM_FICHIER'
+        path_segments = photo.url.split('/')
+        
+        # Trouver la partie à partir de 'konekte' (le nom du folder) jusqu'à l'extension
+        try:
+             # Index du dossier racine Cloudinary
+            start_index = path_segments.index('konekte') 
+            filename_with_ext = path_segments[-1]
+            filename_without_ext = os.path.splitext(filename_with_ext)[0]
+            
+            # Reconstruire l'ID public (ex: konekte/users/1/nom_fichier)
+            public_id = '/'.join(path_segments[start_index:-1] + [filename_without_ext])
+            
+        except ValueError:
+            # Fallback ou gestion d'erreur si le format d'URL est inattendu
+            public_id = f"konekte/users/{current_user.id}/fallback_id_{photo.id}"
+
+        # 3. Supprimer de Cloudinary
+        # Utiliser 'destroy' pour supprimer la photo
+        cloudinary.uploader.destroy(public_id)
+
+    except Exception as e:
+        print(f"Cloudinary Deletion Error: {e}")
+        # On log l'erreur, mais on continue la suppression en BDD car le fichier n'est pas essentiel à l'intégrité de la BDD.
+    
+    # 4. Supprimer de la BDD
+    session.delete(photo)
+    session.commit()
+    return # Retourne 204 No Content
+
+
+#==========================L O C A T I O N==============================
+
+# BackEnd/main.py
+
+@app.put("/users/me/location", response_model=UserRead, status_code=status.HTTP_200_OK)
+def update_user_location(
+    location_data: LocationUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(AuthService.get_current_active_user)
+):
+    """Met à jour la latitude et la longitude de l'utilisateur actuel."""
+    
+    current_user.latitude = location_data.latitude
+    current_user.longitude = location_data.longitude
+    current_user.last_seen = datetime.utcnow()
+    
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+    
+    return current_user
