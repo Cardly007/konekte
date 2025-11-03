@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/pages/profile_settings_page.dart';
+import 'package:flutter_application_1/pages/edit_profile_page.dart';
 import 'package:flutter_application_1/widget/konekteBottomBar.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_1/theme.dart'; // Ton ThemeProvider
@@ -87,6 +88,19 @@ class ParametresClairsPage extends StatelessWidget {
                                           // Provider.of<ThemeProvider>(context, listen: false).toggleTheme(isDark);
                                         },
                                       ),
+                                    ),
+                                  );
+                                },
+                              ),
+
+                              _buildBlurTile(
+                                "Edit Profile",
+                                Icons.edit,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const EditProfilePage(),
                                     ),
                                   );
                                 },

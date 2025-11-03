@@ -333,7 +333,7 @@
 #             raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
 #         return user
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import SQLModel, Session, create_engine, select
@@ -341,7 +341,7 @@ from passlib.hash import bcrypt
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import random
-from models import User, Interaction, Match, Message  # Ton fichier models.py
+from .models import User, Interaction, Match, Message  # Ton fichier models.py
 from pydantic import BaseModel
 
 
@@ -751,3 +751,147 @@ def get_conversations(current_user: User = Depends(get_current_user)):
 
         return convs
 
+# --- Nouveaux Endpoints pour le Profil ---
+from .schemas import ProfileUpdate, ProfilePublic, Interest as InterestSchema
+from .models import Lifestyle, Interest
+
+# Endpoint pour pré-remplir les intérêts
+@app.post("/api/seed-interests")
+def seed_interests():
+    # S'assurer que les tables sont créées dans la bdd en mémoire
+    init_db()
+    interests_data = [
+        {"name": "Running", "category": "Sport & Fitness"},
+        {"name": "Yoga", "category": "Sport & Fitness"},
+        {"name": "Musculation", "category": "Sport & Fitness"},
+        {"name": "Rock", "category": "Musique"},
+        {"name": "Jazz", "category": "Musique"},
+        {"name": "Action", "category": "Films & Séries"},
+        {"name": "Comédie", "category": "Films & Séries"},
+    ]
+    with Session(engine) as session:
+        existing_interests = session.exec(select(Interest)).all()
+        if not existing_interests:
+            for interest_data in interests_data:
+                interest = Interest.model_validate(interest_data)
+                session.add(interest)
+            session.commit()
+            return {"message": "Intérêts ajoutés avec succès."}
+        return {"message": "Les intérêts existent déjà."}
+
+# Endpoint pour lister tous les intérêts
+@app.get("/api/interests", response_model=List[InterestSchema])
+def get_interests():
+    with Session(engine) as session:
+        interests = session.exec(select(Interest)).all()
+        return interests
+
+# Endpoint pour voir un profil public
+@app.get("/api/profile/{user_id}", response_model=ProfilePublic)
+def get_user_profile(user_id: int):
+    with Session(engine) as session:
+        user = session.get(User, user_id, with_for_update=False)
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+
+        # Ce mapping devra être amélioré si la structure de `ProfilePublic` devient plus complexe
+        return user
+
+# Endpoint pour mettre à jour son propre profil
+@app.put("/api/profile/me", response_model=ProfilePublic)
+def update_my_profile(profile_data: ProfileUpdate, current_user: User = Depends(get_current_user)):
+    with Session(engine) as session:
+        # 1. Mettre à jour les champs simples de l'utilisateur
+        user_data = profile_data.model_dump(exclude_unset=True)
+        for key, value in user_data.items():
+            if key not in ["lifestyle", "interest_ids"]:
+                setattr(current_user, key, value)
+
+        # 2. Mettre à jour le style de vie
+        if profile_data.lifestyle:
+            if current_user.lifestyle:
+                lifestyle_data = profile_data.lifestyle.model_dump(exclude_unset=True)
+                for key, value in lifestyle_data.items():
+                    setattr(current_user.lifestyle, key, value)
+            else:
+                lifestyle = Lifestyle.model_validate(profile_data.lifestyle, update={"user_id": current_user.id})
+                current_user.lifestyle = lifestyle
+
+        # 3. Mettre à jour les intérêts
+        if profile_data.interest_ids is not None:
+            # Récupère les objets Interest correspondants aux IDs
+            interests = session.exec(select(Interest).where(Interest.id.in_(profile_data.interest_ids))).all()
+            current_user.interests = interests
+
+        session.add(current_user)
+        session.commit()
+        session.refresh(current_user)
+        return current_user
+
+# --- Endpoints pour la gestion des photos ---
+
+@app.post("/api/profile/me/photos")
+async def upload_photos(files: List[UploadFile] = File(...), current_user: User = Depends(get_current_user)):
+    with Session(engine) as session:
+        if len(current_user.photos) + len(files) > 9:
+            raise HTTPException(status_code=400, detail="Vous ne pouvez pas avoir plus de 9 photos.")
+
+        for file in files:
+            # Simulation du stockage: on utilise une URL fictive.
+            # Dans une vraie application, on uploaderait sur S3, Cloudinary, etc.
+            # et on enregistrerait l'URL retournée.
+            photo_url = f"https://picsum.photos/seed/{current_user.id}_{file.filename}/400/600"
+
+            # Détermine la position de la nouvelle photo
+            new_position = len(current_user.photos) + 1
+
+            photo = Photo(url=photo_url, user_id=current_user.id, position=new_position)
+            session.add(photo)
+
+        session.commit()
+        session.refresh(current_user)
+        return current_user.photos
+
+class PhotoOrder(BaseModel):
+    photo_ids: List[int]
+
+@app.put("/api/profile/me/photos/order")
+def reorder_photos(order: PhotoOrder, current_user: User = Depends(get_current_user)):
+    with Session(engine) as session:
+        if len(order.photo_ids) != len(current_user.photos):
+            raise HTTPException(status_code=400, detail="La liste des IDs de photos ne correspond pas au nombre de photos de l'utilisateur.")
+
+        for i, photo_id in enumerate(order.photo_ids):
+            photo = session.get(Photo, photo_id)
+            if photo and photo.user_id == current_user.id:
+                photo.position = i + 1
+                session.add(photo)
+
+        session.commit()
+        return {"message": "L'ordre des photos a été mis à jour."}
+
+# --- Endpoint pour la Vérification de Profil ---
+
+@app.post("/api/users/verify")
+async def verify_profile(selfie: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    # --- Simulation de la vérification par ML ---
+    # Dans une application réelle, vous appelleriez ici un service de reconnaissance faciale.
+    # Pour cette démo, nous allons simuler un succès aléatoire.
+    import random
+
+    # 1. On vérifie que l'utilisateur a au moins une photo de profil
+    if not current_user.photos:
+        raise HTTPException(status_code=400, detail="Veuillez ajouter au moins une photo à votre profil avant de demander la vérification.")
+
+    # 2. Simulation de la comparaison
+    similarity_score = random.uniform(0.7, 0.99) # Score aléatoire
+
+    with Session(engine) as session:
+        if similarity_score > 0.85:
+            current_user.is_verified = True
+            current_user.verified_at = datetime.utcnow()
+            session.add(current_user)
+            session.commit()
+            return {"verified": True, "score": similarity_score}
+        else:
+            return {"verified": False, "reason": "Les visages ne correspondent pas.", "score": similarity_score}

@@ -142,6 +142,33 @@ class _SwipePageState extends State<SwipePage> {
   final ApiService apiService = ApiService();
   final AuthService authService = AuthService();
 
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title.toUpperCase(),
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: Colors.black54,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLifestyleItem(String icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4.0),
+      child: Row(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 8),
+          Text(text, style: const TextStyle(fontSize: 16)),
+        ],
+      ),
+    );
+  }
+
   late MatchEngine _matchEngine;
   final List<SwipeItem> _swipeItems = [];
   List<Map<String, dynamic>> profils = [];
@@ -340,62 +367,81 @@ class _SwipePageState extends State<SwipePage> {
                                   'https://fpoimg.com/600x400?text=Preview&bg_color=e6e6e6&text_color=8F8F8F',
                             ];
 
-                        return Card(
-                          elevation: 18,
-                          shadowColor: Colors.black.withOpacity(0.4),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(28),
-                            child: Column(
-                              children: [
-                                // Défilement horizontal des photos
-                                SizedBox(
-                                  height: cardHeight * 0.65,
-                                  child: PageView.builder(
-                                    itemCount: photos.length,
-                                    itemBuilder: (context, photoIndex) {
-                                      return Image.network(
-                                        photos[photoIndex],
-                                        width: cardWidth,
-                                        height: cardHeight * 0.65,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
+                        return GestureDetector(
+                          onTap: () {
+                            // TODO: Afficher le profil complet au clic
+                          },
+                          child: Card(
+                            elevation: 18,
+                            shadowColor: Colors.black.withOpacity(0.4),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(28),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(28),
+                              child: SingleChildScrollView( // Pour les profils longs
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Carousel de photos
+                                    SizedBox(
+                                      height: cardHeight * 0.55,
+                                      child: PageView.builder(
+                                        itemCount: photos.length,
+                                        itemBuilder: (context, photoIndex) {
                                           return Image.network(
-                                            'https://fpoimg.com/600x400?text=Preview&bg_color=e6e6e6&text_color=8F8F8F',
-                                            width: cardWidth,
-                                            height: cardHeight * 0.65,
+                                            photos[photoIndex],
                                             fit: BoxFit.cover,
                                           );
                                         },
-                                      );
-                                    },
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        "${profil['nom']}, ${profil['age']}",
-                                        style: const TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.bold,
-                                        ),
                                       ),
-                                      const SizedBox(height: 10),
-                                      Text(
-                                        profil['description'] ??
-                                            'Description non disponible',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(fontSize: 18),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "${profil['nom'] ?? 'N/A'}, ${profil['age'] ?? 'N/A'}",
+                                            style: const TextStyle(
+                                              fontSize: 28,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          if (profil['job'] != null)
+                                            Text(
+                                              "${profil['job']} chez ${profil['company'] ?? ''}",
+                                              style: const TextStyle(fontSize: 16),
+                                            ),
+                                          const SizedBox(height: 10),
+                                          Text(
+                                            profil['description'] ?? 'Description non disponible',
+                                            style: const TextStyle(fontSize: 16),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          if (profil['interests'] != null && (profil['interests'] as List).isNotEmpty)
+                                            _buildSectionTitle("Intérêts"),
+                                          Wrap(
+                                            spacing: 8.0,
+                                            runSpacing: 4.0,
+                                            children: (profil['interests'] as List<dynamic>?)
+                                                ?.map((interest) => Chip(label: Text(interest['name'])))
+                                                .toList() ?? [],
+                                          ),
+                                          const SizedBox(height: 16),
+                                           if (profil['lifestyle'] != null)
+                                            _buildSectionTitle("Style de vie"),
+                                          if (profil['lifestyle']?['drinking'] != null)
+                                            _buildLifestyleItem("🍺", profil['lifestyle']['drinking']),
+                                          if (profil['lifestyle']?['smoking'] != null)
+                                            _buildLifestyleItem("🚭", profil['lifestyle']['smoking']),
+
+                                        ],
                                       ),
-                                      // Ajoute ici d'autres infos si besoin
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         );
