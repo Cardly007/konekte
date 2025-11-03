@@ -3,7 +3,7 @@ import 'widget/KonekteBottomBar.dart';
 import 'main.dart';
 import 'pages/chat_page.dart';
 import 'pages/conversations_page.dart';
-import 'pages/ParametresClairsPage.dart';
+import 'pages/parametres_clairs_page.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});

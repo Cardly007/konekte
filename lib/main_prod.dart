@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/pages/ParametresClairsPage.dart';
+import 'package:flutter_application_1/pages/parametres_clairs_page.dart';
 import 'package:flutter_application_1/pages/chat_page.dart';
 import 'package:flutter_application_1/pages/conversations_page.dart';
 import 'package:flutter_application_1/main_scaffold.dart';
-import 'package:flutter_application_1/pages/parametresPage.dart';
+import 'package:flutter_application_1/pages/parametres_page.dart';
 import 'package:lottie/lottie.dart';
 import 'package:swipe_cards/swipe_cards.dart';
 import 'package:http/http.dart' as http;
