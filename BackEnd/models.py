@@ -5,6 +5,18 @@ import json # Import nécessaire pour le champ JSON futur si l'on ne crée pas d
 from sqlalchemy import JSON, Boolean, Column, func # Import pour le type JSON et les fonctions SQL
 
 
+# --- MODÈLES DE LIAISON ---
+class UserInterestLink(SQLModel, table=True):
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id", primary_key=True)
+    interest_id: Optional[int] = Field(default=None, foreign_key="interest.id", primary_key=True)
+
+# --- MODÈLES DE BASE ---
+class Interest(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    category: str
+    users: List["User"] = Relationship(back_populates="interests", link_model=UserInterestLink)
+
 # --- NOUVEAU MODÈLE POUR LES PHOTOS (support des photos multiples) ---
 class PhotoBase(SQLModel):
     url: str = Field(index=True)
@@ -37,6 +49,19 @@ class Preference(PreferenceBase, table=True):
 # ----------------------------------------------------------------------
 
 
+# --- NOUVEAUX MODÈLES DE LECTURE ---
+class LifestyleRead(SQLModel):
+    drinking: Optional[str] = None
+    smoking: Optional[str] = None
+    workout: Optional[str] = None
+    diet_preference: Optional[str] = None
+    pets: Optional[str] = None
+
+class InterestRead(SQLModel):
+    id: int
+    name: str
+    category: str
+
 # --- MODÈLE UTILISATEUR CONSOLIDÉ ---
 class UserBase(SQLModel):
     # Champs du modèle original
@@ -67,6 +92,8 @@ class User(UserBase, table=True):
     photos: List[Photo] = Relationship(back_populates="user")
     preference: Optional[Preference] = Relationship(back_populates="user")
     lifestyle: Optional["Lifestyle"] = Relationship(back_populates="user", sa_relationship_kwargs={'uselist': False})
+    interests: List[Interest] = Relationship(back_populates="users", link_model=UserInterestLink)
+
 
     # Interactions (like/dislike)
     interactions_as_user: List["Interaction"] = Relationship(back_populates="user", sa_relationship_kwargs={"foreign_keys": "Interaction.user_id"})
@@ -88,6 +115,8 @@ class UserCreate(UserBase):
 class UserRead(UserBase):
     id: int
     photos: List[PhotoRead] = []
+    lifestyle: Optional[LifestyleRead] = None
+    interests: List[InterestRead] = []
 
 
 # --- MODÈLES D'INTERACTION ET DE CHAT ---

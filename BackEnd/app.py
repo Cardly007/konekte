@@ -107,9 +107,12 @@ app.add_middleware(
 # -----------------------
 @app.post("/api/register", response_model=UserRead)
 def register_user(user_data: UserCreate, session: Session = Depends(get_session)):
+    if len(user_data.password) < 8:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères.")
+
     existing_user = session.exec(select(User).where(User.email == user_data.email)).first()
     if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
 
     hashed_password = AuthService.get_password_hash(user_data.password)
 
