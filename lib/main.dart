@@ -22,9 +22,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return MaterialApp(
       title: 'Konekte',
-      theme: Provider.of<ThemeProvider>(context).themeData,
+      themeMode: themeProvider.themeMode,
+      theme: lightTheme,
+      darkTheme: darkTheme,
       debugShowCheckedModeBanner: false,
       home: const AuthWrapper(),
     );

@@ -159,7 +159,7 @@ class ParametresClairsPage extends StatelessWidget {
                                   Navigator.of(context).pushAndRemoveUntil(
                                     MaterialPageRoute(
                                       builder: (_) =>
-                                          LoginPage(onLoginSuccess: () {}),
+                                          const LoginPage(),
                                     ),
                                     (route) => false,
                                   );
