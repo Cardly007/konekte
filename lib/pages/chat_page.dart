@@ -2,12 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:uuid/uuid.dart';
-import 'package:file_picker/file_picker.dart';
-import 'dart:io';
-import '../main.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/constants.dart';
+import '../main.dart'; // Pour MainLayout
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+  final String currentUserId;
+  final String otherUserId;
+  final String otherUserName;
+  final String matchId;
+
+  const ChatPage({
+    super.key,
+    required this.currentUserId,
+    required this.otherUserId,
+    required this.otherUserName,
+    required this.matchId,
+  });
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -15,38 +28,50 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   List<types.Message> _messages = [];
-  final types.User _user = const types.User(id: 'user-id-1');
+  late types.User _currentUser;
+  late types.User _otherUser;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _currentUser = types.User(id: widget.currentUserId);
+    _otherUser = types.User(id: widget.otherUserId, firstName: widget.otherUserName);
     _loadMessages();
   }
 
-  void _loadMessages() {
-    const otherUser = types.User(id: 'user-id-2');
+  Future<void> _loadMessages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
 
-    setState(() {
-      _messages = [
-        types.TextMessage(
-          author: otherUser,
-          createdAt: DateTime.now().millisecondsSinceEpoch,
-          id: const Uuid().v4(),
-          text: 'Hey 👋 Comment tu vas ?',
-        ),
-        types.TextMessage(
-          author: _user,
-          createdAt: DateTime.now().millisecondsSinceEpoch,
-          id: const Uuid().v4(),
-          text: 'Plutôt bien merci 😄 Et toi ?',
-        ),
-      ];
-    });
+    final response = await http.get(
+      Uri.parse('${Constants.apiBaseUrl}/api/messages/${widget.matchId}'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final messagesData = json.decode(response.body) as List;
+      final messages = messagesData.map((data) {
+        return types.TextMessage(
+          author: data['sender_id'].toString() == widget.currentUserId ? _currentUser : _otherUser,
+          id: data['id'].toString(),
+          text: data['text'],
+          createdAt: DateTime.parse(data['timestamp']).millisecondsSinceEpoch,
+        );
+      }).toList();
+
+      setState(() {
+        _messages = messages;
+        _isLoading = false;
+      });
+    } else {
+      setState(() => _isLoading = false);
+    }
   }
 
-  void _handleSendPressed(types.PartialText message) {
+  void _handleSendPressed(types.PartialText message) async {
     final textMessage = types.TextMessage(
-      author: _user,
+      author: _currentUser,
       createdAt: DateTime.now().millisecondsSinceEpoch,
       id: const Uuid().v4(),
       text: message.text,
@@ -55,93 +80,42 @@ class _ChatPageState extends State<ChatPage> {
     setState(() {
       _messages.insert(0, textMessage);
     });
-  }
 
-  Future<void> _handleAttachmentPressed() async {
-    final result = await FilePicker.platform.pickFiles(withData: true);
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
 
-    if (result != null && result.files.single.bytes != null) {
-      final file = result.files.single;
-      final mime = file.extension;
-
-      if (mime == 'jpg' || mime == 'png') {
-        final imageMessage = types.ImageMessage(
-          author: _user,
-          createdAt: DateTime.now().millisecondsSinceEpoch,
-          id: const Uuid().v4(),
-          name: file.name,
-          size: file.size,
-          uri: file.path!,
-        );
-        setState(() => _messages.insert(0, imageMessage));
-      } else if (mime == 'mp4') {
-        final videoMessage = types.FileMessage(
-          author: _user,
-          createdAt: DateTime.now().millisecondsSinceEpoch,
-          id: const Uuid().v4(),
-          name: file.name,
-          size: file.size,
-          uri: file.path!,
-          mimeType: 'video/mp4',
-        );
-        setState(() => _messages.insert(0, videoMessage));
-      } else if (mime == 'mp3' || mime == 'wav') {
-        final audioMessage = types.FileMessage(
-          author: _user,
-          createdAt: DateTime.now().millisecondsSinceEpoch,
-          id: const Uuid().v4(),
-          name: file.name,
-          size: file.size,
-          uri: file.path!,
-          mimeType: 'audio/mpeg',
-        );
-        setState(() => _messages.insert(0, audioMessage));
-      }
-    }
+    await http.post(
+      Uri.parse('${Constants.apiBaseUrl}/api/messages/send'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'match_id': int.parse(widget.matchId),
+        'text': message.text,
+      }),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFff9a9e), Color(0xFFfad0c4)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: Chat(
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.otherUserName),
+        backgroundColor: Colors.pink,
+      ),
+      body: _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : Chat(
             messages: _messages,
             onSendPressed: _handleSendPressed,
-            user: _user,
-            onAttachmentPressed: _handleAttachmentPressed,
+            user: _currentUser,
             theme: const DefaultChatTheme(
               backgroundColor: Colors.transparent,
               primaryColor: Colors.pinkAccent,
-              secondaryColor: Colors.orangeAccent,
-              inputBackgroundColor: Colors.white,
-              inputTextColor: Colors.black,
-              inputTextStyle: TextStyle(fontSize: 15),
-              inputBorderRadius: BorderRadius.all(Radius.circular(30)),
-              inputPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              sendButtonIcon: Icon(Icons.send, color: Colors.pinkAccent),
-              messageBorderRadius: 20,
-              messageInsetsHorizontal: 12,
-              messageInsetsVertical: 8,
-              userAvatarNameColors: [Colors.pink, Colors.orange],
-              userAvatarTextStyle: TextStyle(fontWeight: FontWeight.bold),
-              attachmentButtonIcon: Icon(Icons.attach_file, color: Colors.pink),
-              attachmentButtonMargin: EdgeInsets.all(8),
-              dateDividerMargin: EdgeInsets.symmetric(vertical: 10),
-              dateDividerTextStyle: TextStyle(color: Colors.white70),
-              deliveredIcon: Icon(Icons.done, size: 16, color: Colors.white70),
-              documentIcon: Icon(Icons.insert_drive_file, color: Colors.white),
+              secondaryColor: Color(0xFFF5F5F5),
             ),
           ),
-        ),
-      ),
     );
   }
 }
