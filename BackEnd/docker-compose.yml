@@ -1,0 +1,16 @@
+# docker-compose.yml
+services:
+  db:
+    image: postgres:15-alpine  # Ou postgis/postgis:15-3.3 pour PostGIS plus tard
+    restart: always
+    environment:
+      POSTGRES_USER: konekte_user
+      POSTGRES_PASSWORD: Nap_lite
+      POSTGRES_DB: konekte_db
+    ports:
+      - "5432:5432" # Mappe le port de ta machine au port du conteneur
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persiste les données
+
+volumes:
+  postgres_data:

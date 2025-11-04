@@ -110,6 +110,24 @@ class _ManagePhotosPageState extends State<ManagePhotosPage> {
     }
   }
 
+  Future<void> _deletePhoto(int photoId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    final response = await http.delete(
+      Uri.parse('${Constants.apiBaseUrl}/api/profile/me/photos/$photoId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 204) {
+      setState(() {
+        _photos.removeWhere((p) => p.id == photoId);
+      });
+    } else {
+      // Gérer l'erreur
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -138,9 +156,7 @@ class _ManagePhotosPageState extends State<ManagePhotosPage> {
                         Image.network(photo.url),
                         IconButton(
                           icon: const Icon(Icons.remove_circle, color: Colors.red),
-                          onPressed: () {
-                            // TODO: Implémenter la suppression
-                          },
+                          onPressed: () => _deletePhoto(photo.id),
                         ),
                       ],
                     ),

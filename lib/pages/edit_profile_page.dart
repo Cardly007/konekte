@@ -172,17 +172,33 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   // ... (tous les widgets _build... restent ici)
+  double _calculateProfileCompletion() {
+    int totalFields = 7; // Nom, Job, Company, School, Bio, Alcool, Tabac
+    int filledFields = 0;
+
+    if (_nomController.text.isNotEmpty) filledFields++;
+    if (_jobController.text.isNotEmpty) filledFields++;
+    if (_companyController.text.isNotEmpty) filledFields++;
+    if (_schoolController.text.isNotEmpty) filledFields++;
+    if (_bioController.text.isNotEmpty) filledFields++;
+    if (_drinkingValue != null) filledFields++;
+    if (_smokingValue != null) filledFields++;
+
+    return filledFields / totalFields;
+  }
+
     Widget _buildHeader() {
+    final completion = _calculateProfileCompletion();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Profil complété à 40%", // TODO: Rendre dynamique
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          "Profil complété à ${(completion * 100).toStringAsFixed(0)}%",
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        const LinearProgressIndicator(
-          value: 0.4, // TODO: Rendre dynamique
+        LinearProgressIndicator(
+          value: completion,
           backgroundColor: Colors.black12,
           valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
         ),
