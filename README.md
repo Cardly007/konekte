@@ -72,8 +72,8 @@ source venv/bin/activate  # Sur Windows : venv\Scripts\activate
 # Installez les dépendances Python
 pip install -r requirements.txt
 
-# Lancez le serveur FastAPI
-uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+# Depuis la racine du projet (le dossier au-dessus de BackEnd), lancez le serveur FastAPI
+uvicorn BackEnd.app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 Le serveur backend est maintenant en cours d'exécution et accessible à `http://localhost:8000`.
