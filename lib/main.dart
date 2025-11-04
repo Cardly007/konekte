@@ -824,7 +824,7 @@ class MainLayout extends StatelessWidget {
               break;
             case 3:
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const ChatPage()),
+                MaterialPageRoute(builder: (context) => const ConversationsPage()),
               );
               break;
             case 4:
