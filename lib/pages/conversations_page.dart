@@ -5,7 +5,6 @@ import 'package:flutter_application_1/pages/chat_page.dart';
 import 'package:flutter_application_1/utils/constants.dart';
 import 'package:flutter_application_1/widget/KonekteBottomBar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/pages/chat_page_test.dart';
 
 import 'package:http/http.dart' as http;
 // import '../../test/tes_chat.dart';
@@ -203,7 +202,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
               final message = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ChatPage2(
+                  builder: (_) => ChatPage(
                     currentUserId: currentUserId.toString(),
                     otherUserId: user["id"].toString(),
                     otherUserName: user["nom"] ?? "Chat",

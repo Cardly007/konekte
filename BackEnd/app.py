@@ -1,4 +1,3 @@
-from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
