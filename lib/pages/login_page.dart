@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import 'register_page.dart';
+import 'register_flow_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -100,7 +100,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 20),
                 TextButton(
-                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RegisterPage())),
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RegisterFlowPage())),
                   child: const Text('Créer un compte', style: TextStyle(color: Colors.blue)),
                 ),
               ],

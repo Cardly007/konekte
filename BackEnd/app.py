@@ -105,14 +105,23 @@ app.add_middleware(
 # -----------------------
 # Endpoints
 # -----------------------
-@app.post("/api/register", response_model=UserRead)
-def register_user(user_data: UserCreate, session: Session = Depends(get_session)):
-    if len(user_data.password) < 8:
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères.")
+from pydantic import Field as PydanticField
 
-    existing_user = session.exec(select(User).where(User.email == user_data.email)).first()
-    if existing_user:
+class UserRegister(UserCreate):
+    password: str = PydanticField(..., min_length=8)
+
+@app.post("/api/register", response_model=UserRead)
+def register_user(user_data: UserRegister, session: Session = Depends(get_session)):
+    # Check for existing email
+    existing_email = session.exec(select(User).where(User.email == user_data.email)).first()
+    if existing_email:
         raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
+
+    # Check for existing username
+    if user_data.username:
+        existing_username = session.exec(select(User).where(User.username == user_data.username)).first()
+        if existing_username:
+            raise HTTPException(status_code=400, detail="Ce nom d'utilisateur est déjà pris.")
 
     hashed_password = AuthService.get_password_hash(user_data.password)
 
