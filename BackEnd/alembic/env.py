@@ -1,34 +1,58 @@
+# import sys
+# from pathlib import Path
+# sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+# from logging.config import fileConfig
+
+# from sqlalchemy import engine_from_config # type: ignore
+# from sqlalchemy import pool # type: ignore
+
+# from alembic import context
+
+# # Import your models here so Alembic can see them
+# from models import * # noqa
+
+# # this is the Alembic Config object, which provides
+# # access to the values within the .ini file in use.
+# config = context.config
+
+# # Interpret the config file for Python logging.
+# # This line sets up loggers basically.
+# if config.config_file_name is not None:
+#     fileConfig(config.config_file_name)
+
+# # add your model's MetaData object here
+# # for 'autogenerate' support
+# target_metadata = SQLModel.metadata
+
+# # other values from the config, defined by the needs of env.py,
+# # can be acquired:
+# # my_important_option = config.get_main_option("my_important_option")
+# # ... etc.
+
 import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
+import os
+from dotenv import load_dotenv
 from logging.config import fileConfig
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
+from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# Import your models here so Alembic can see them
-from models import * # noqa
+# Ajoute le dossier racine du projet et "app" au PYTHONPATH
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../app')))
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# Import de la config Alembic
 config = context.config
+fileConfig(config.config_file_name)
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# Import de la Base et des modèles
+from app.core.database import Base  # Base = declarative_base() dans ce fichier
+from app import models  # importe le package complet (grâce à __init__.py)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-target_metadata = SQLModel.metadata
+# Récupère les métadonnées de tous les modèles
+target_metadata = Base.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
 
 
 def run_migrations_offline() -> None:

@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str
     TWILIO_VERIFY_SERVICE_SID: str
 
+    secret_key: str | None = None
+    firebase_project_id: str | None = None
+    firebase_private_key: str | None = None
+
+
     # Sentry
     SENTRY_DSN: str | None = None
 
