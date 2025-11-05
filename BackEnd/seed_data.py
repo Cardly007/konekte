@@ -4,8 +4,8 @@ import asyncio
 from faker import Faker
 from sqlalchemy.orm import sessionmaker
 
-# Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# This script is intended to be run from the project root.
+# Example: python -m BackEnd.seed_data
 
 from app.core.database import engine
 from app.models import (
