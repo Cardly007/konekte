@@ -17,7 +17,7 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for now (can be restricted later)
+    allow_origins=["*"],  # Allow all origins for now
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,7 +28,13 @@ async def startup():
     """
     Initialize Redis connection and rate limiter on startup.
     """
-    redis_client = redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+    redis_client = redis.Redis(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        password=settings.REDIS_PASSWORD,
+        encoding="utf-8",
+        decode_responses=True
+    )
     await FastAPILimiter.init(redis_client)
 
 @app.get("/")

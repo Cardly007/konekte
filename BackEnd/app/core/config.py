@@ -1,9 +1,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
+from typing import Optional
 
 # Build the path to the .env file.
-# This assumes the config.py file is in `BackEnd/app/core/`.
-# It navigates up two levels to the `BackEnd/` directory and looks for `.env`.
 env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
 
 class Settings(BaseSettings):
@@ -14,7 +13,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     # Redis
-    REDIS_URL: str
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: Optional[str] = None
 
     # JWT
     JWT_SECRET_KEY: str
@@ -39,12 +40,12 @@ class Settings(BaseSettings):
     FIREBASE_PRIVATE_KEY: str
 
     # Sentry
-    SENTRY_DSN: str | None = None
+    SENTRY_DSN: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=env_path,
         env_file_encoding='utf-8',
-        extra='ignore'  # Ignore extra fields from the .env file
+        extra='ignore'
     )
 
 settings = Settings()

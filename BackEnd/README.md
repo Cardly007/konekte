@@ -4,8 +4,6 @@ This directory contains the Python/FastAPI backend for the Konekte application.
 
 ## Local Development Setup
 
-This guide provides two ways to set up the backend environment.
-
 ### Step 1: Initial Configuration (Do this once)
 
 1.  **Install Dependencies**
@@ -33,7 +31,9 @@ This project supports two primary ways of running the backend.
 If you already have your own PostgreSQL and Redis services running, this is the method for you.
 
 1.  **Configure Your `.env` File**
-    Make sure the `DATABASE_URL` and `REDIS_URL` in your `BackEnd/.env` file point to your services.
+    Make sure the variables in your `BackEnd/.env` file correctly point to your services.
+    - `DATABASE_URL`: Your full PostgreSQL connection string.
+    - `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`: Your Redis connection details. If your Redis has no password, leave `REDIS_PASSWORD` blank.
 
 2.  **Run the App**
     Execute the startup script from the project root:
@@ -59,23 +59,21 @@ If you want to run the provided services, use Docker.
 
 ## Troubleshooting
 
-### `Connection closed by server` (Redis Error)
+### `Connection closed by server` or `Authentication required` (Redis Error)
 
-This error almost always means your Redis instance requires a password, but the application is not providing one.
+This error means your Redis instance requires a password, but the application is not providing the correct one.
 
 **Solution:**
 1.  Open your `BackEnd/.env` file.
-2.  Add a variable for your Redis password:
-    ```
+2.  Find the Redis configuration section.
+3.  Set `REDIS_PASSWORD` to your actual Redis password.
+    ```env
+    REDIS_HOST=localhost
+    REDIS_PORT=6379
     REDIS_PASSWORD=your_actual_redis_password
     ```
-3.  Update the `REDIS_URL` to include this password. The format should be:
+4.  If your Redis has **no password**, make sure the line is empty:
+    ```env
+    REDIS_PASSWORD=
     ```
-    REDIS_URL=redis://:${REDIS_PASSWORD}@localhost:6379
-    ```
-4.  If your Redis has **no password**, the URL should simply be:
-    ```
-    REDIS_URL=redis://localhost:6379
-    ```
-
 After saving the `.env` file, restart the application with `./start_dev.sh`.
