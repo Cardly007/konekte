@@ -4,11 +4,13 @@ This directory contains the Python/FastAPI backend for the Konekte application.
 
 ## Local Development Setup
 
-This guide will walk you through setting up and running the backend for development.
+This guide provides two ways to set up the backend environment, depending on your needs.
 
-### Step 1: Initial Configuration
+---
 
-This only needs to be done once.
+### Scenario A: Connecting to an Existing Database (Your Current Setup)
+
+Follow these steps if you already have a PostgreSQL and Redis instance running, as is your case.
 
 1.  **Install Dependencies**
     From the project root, install all required Python packages.
@@ -17,31 +19,42 @@ This only needs to be done once.
     ```
     *(Note: Re-run this command anytime you pull new changes to the project.)*
 
-2.  **Set Up Environment Variables**
+2.  **Configure Your Environment**
     Create your local environment file by copying the example.
     ```bash
     # From the project root, run:
     cp BackEnd/.env.example BackEnd/.env
     ```
-    Now, open `BackEnd/.env` and fill in your actual credentials for services like Cloudinary, etc.
+    Open `BackEnd/.env` and ensure the `DATABASE_URL` and `REDIS_URL` point to your existing services. The default is `localhost:5432` for PostgreSQL and `localhost:6379` for Redis.
 
-    **Important:** The development database now runs on port `5433` to avoid conflicts. If you already have a `.env` file, please update the `DATABASE_URL` to use `localhost:5433`.
+3.  **Run the Application**
+    Simply run the `start_dev.sh` script from the project root. This script will start the FastAPI server.
+    ```bash
+    # Make sure you are in the project's ROOT directory
+    ./start_dev.sh
+    ```
+    The API will be available at `http://localhost:8000`.
 
-### Step 2: Running the Development Environment
+---
 
-To start the application, simply run the `start_dev.sh` script from the project root.
+### Scenario B: Starting Fresh with Docker
 
-```bash
-# Make sure you are in the project's ROOT directory
-./start_dev.sh
-```
+Follow these steps if you are a new developer on the project and want to run the provided database and cache services using Docker.
 
-**What does this script do?**
-1.  Starts the required background services (PostgreSQL on port 5433 & Redis) using Docker.
-2.  Waits a few seconds for them to initialize.
-3.  Starts the FastAPI server with auto-reload.
+1.  **Install Dependencies & Configure Environment**
+    Follow steps 1 and 2 from Scenario A. The default values in the `.env` file are already configured for this Docker setup.
 
-The API will be available at `http://localhost:8000`. You can stop the server at any time by pressing `CTRL+C`.
+2.  **Start Docker Services**
+    From the project root, run the following command to start the PostgreSQL and Redis containers.
+    ```bash
+    docker-compose -f BackEnd/docker-compose.yml up -d
+    ```
+
+3.  **Run the Application**
+    Once the Docker services are running, start the FastAPI server.
+    ```bash
+    ./start_dev.sh
+    ```
 
 ### Other Useful Commands
 
@@ -49,11 +62,7 @@ The API will be available at `http://localhost:8000`. You can stop the server at
     ```bash
     python -m BackEnd.seed_data
     ```
--   **Run Database Migrations:** (Once Alembic is configured)
-    ```bash
-    alembic upgrade head
-    ```
--   **Stop Docker Services:** To stop the database and cache, run:
+-   **Stop Docker Services:** To stop the database and cache started with Scenario B, run:
     ```bash
     docker-compose -f BackEnd/docker-compose.yml down
     ```

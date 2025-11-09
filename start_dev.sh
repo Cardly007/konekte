@@ -1,22 +1,20 @@
 #!/bin/bash
 
-# This script automates the setup and startup of the development environment.
+# This script starts the FastAPI server for development.
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
-echo "--- Starting development environment ---"
+echo "--- Starting FastAPI Development Server ---"
 
-# Step 1: Start Docker services (PostgreSQL and Redis)
-echo "-> Starting Docker containers for database and cache..."
-docker-compose -f BackEnd/docker-compose.yml up -d
-echo "-> Docker containers started."
+# Check if the .env file exists
+if [ ! -f "BackEnd/.env" ]; then
+    echo "ERROR: .env file not found!"
+    echo "Please create it by copying BackEnd/.env.example and configuring it for your environment."
+    exit 1
+fi
 
-# Wait a few seconds to ensure services are fully up and running
-echo "-> Waiting for services to initialize..."
-sleep 5
-
-# Step 2: Start the FastAPI application
+echo "-> Make sure your database and Redis services are running."
 echo "-> Starting the FastAPI server with auto-reload..."
 echo "-> API will be available at http://localhost:8000"
 echo "-> Press CTRL+C to stop the server."
