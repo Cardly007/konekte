@@ -4,6 +4,8 @@ from fastapi_limiter import FastAPILimiter
 from starlette.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.api.v1 import auth as auth_router
+from app.api.v1 import profiles as profiles_router
 
 # Initialize the FastAPI app
 app = FastAPI(
@@ -36,6 +38,6 @@ def read_root():
     """
     return {"status": "ok", "message": "Welcome to the Konekte API"}
 
-# Here we would include the API routers from app.api.v1
-# Example: from app.api.v1 import auth
-# app.include_router(auth.router, prefix="/api/v1/auth")
+# Include API routers
+app.include_router(auth_router.router, prefix="/api/v1/auth")
+app.include_router(profiles_router.router, prefix="/api/v1/profiles")
