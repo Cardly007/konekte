@@ -4,13 +4,9 @@ This directory contains the Python/FastAPI backend for the Konekte application.
 
 ## Local Development Setup
 
-This guide provides two ways to set up the backend environment, depending on your needs.
+This guide provides two ways to set up the backend environment.
 
----
-
-### Scenario A: Connecting to an Existing Database (Your Current Setup)
-
-Follow these steps if you already have a PostgreSQL and Redis instance running, as is your case.
+### Step 1: Initial Configuration (Do this once)
 
 1.  **Install Dependencies**
     From the project root, install all required Python packages.
@@ -22,47 +18,64 @@ Follow these steps if you already have a PostgreSQL and Redis instance running, 
 2.  **Configure Your Environment**
     Create your local environment file by copying the example.
     ```bash
-    # From the project root, run:
     cp BackEnd/.env.example BackEnd/.env
     ```
-    Open `BackEnd/.env` and ensure the `DATABASE_URL` and `REDIS_URL` point to your existing services. The default is `localhost:5432` for PostgreSQL and `localhost:6379` for Redis.
-
-3.  **Run the Application**
-    Simply run the `start_dev.sh` script from the project root. This script will start the FastAPI server.
-    ```bash
-    # Make sure you are in the project's ROOT directory
-    ./start_dev.sh
-    ```
-    The API will be available at `http://localhost:8000`.
+    Now, open `BackEnd/.env` and configure the variables to match your setup.
 
 ---
 
-### Scenario B: Starting Fresh with Docker
+### Step 2: Running the Application
 
-Follow these steps if you are a new developer on the project and want to run the provided database and cache services using Docker.
+This project supports two primary ways of running the backend.
 
-1.  **Install Dependencies & Configure Environment**
-    Follow steps 1 and 2 from Scenario A. The default values in the `.env` file are already configured for this Docker setup.
+#### Scenario A: Connecting to an Existing Database (Your Current Setup)
 
-2.  **Start Docker Services**
-    From the project root, run the following command to start the PostgreSQL and Redis containers.
+If you already have your own PostgreSQL and Redis services running, this is the method for you.
+
+1.  **Configure Your `.env` File**
+    Make sure the `DATABASE_URL` and `REDIS_URL` in your `BackEnd/.env` file point to your services.
+
+2.  **Run the App**
+    Execute the startup script from the project root:
+    ```bash
+    ./start_dev.sh
+    ```
+
+#### Scenario B: Starting Fresh with Docker
+
+If you want to run the provided services, use Docker.
+
+1.  **Start Docker Services**
     ```bash
     docker-compose -f BackEnd/docker-compose.yml up -d
     ```
 
-3.  **Run the Application**
-    Once the Docker services are running, start the FastAPI server.
+2.  **Run the App**
     ```bash
     ./start_dev.sh
     ```
 
-### Other Useful Commands
+---
 
--   **Seed the Database:** To populate the database with test data, run this command from the project root in a **separate terminal**:
-    ```bash
-    python -m BackEnd.seed_data
+## Troubleshooting
+
+### `Connection closed by server` (Redis Error)
+
+This error almost always means your Redis instance requires a password, but the application is not providing one.
+
+**Solution:**
+1.  Open your `BackEnd/.env` file.
+2.  Add a variable for your Redis password:
     ```
--   **Stop Docker Services:** To stop the database and cache started with Scenario B, run:
-    ```bash
-    docker-compose -f BackEnd/docker-compose.yml down
+    REDIS_PASSWORD=your_actual_redis_password
     ```
+3.  Update the `REDIS_URL` to include this password. The format should be:
+    ```
+    REDIS_URL=redis://:${REDIS_PASSWORD}@localhost:6379
+    ```
+4.  If your Redis has **no password**, the URL should simply be:
+    ```
+    REDIS_URL=redis://localhost:6379
+    ```
+
+After saving the `.env` file, restart the application with `./start_dev.sh`.

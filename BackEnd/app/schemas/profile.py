@@ -8,7 +8,7 @@ class Photo(BaseModel):
     display_order: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ProfileBase(BaseModel):
     first_name: str
@@ -28,4 +28,4 @@ class ProfileRead(ProfileBase):
     photos: List[Photo] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
