@@ -14,6 +14,7 @@ This directory contains the Python/FastAPI backend for the Konekte application.
 
 Install all the required Python packages using the `requirements.txt` file (it's recommended to do this from the project root).
 
+**Note:** After pulling new changes from the repository, always re-run this command to ensure you have the latest dependencies.
 ```bash
 pip install -r BackEnd/requirements.txt
 ```
@@ -45,7 +46,7 @@ This project uses Alembic to manage database migrations. To apply all migrations
 alembic upgrade head
 ```
 
-_Note: Alembic is not yet configured in this phase, but this command will be used once it is._
+_Note: Alembic is not yet configured in this phase, but this command will be a part of the standard setup._
 
 ### 5. Seed the Database (Optional)
 

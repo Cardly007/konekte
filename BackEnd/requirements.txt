@@ -12,6 +12,7 @@ redis
 fastapi-limiter
 
 # Configuration & Security
+pydantic[email]  # Includes email-validator
 pydantic-settings
 python-dotenv
 python-jose[cryptography]
@@ -27,6 +28,5 @@ sentry-sdk[fastapi]
 # Logging
 structlog
 
-# Utilities for Seeding (to be added later if needed)
-# Faker
+# Utilities for Seeding
 Faker
