@@ -23,7 +23,9 @@ This only needs to be done once.
     # From the project root, run:
     cp BackEnd/.env.example BackEnd/.env
     ```
-    Now, open `BackEnd/.env` and fill in your actual credentials for services like Cloudinary, etc. The default database and Redis URLs are already configured for local development.
+    Now, open `BackEnd/.env` and fill in your actual credentials for services like Cloudinary, etc.
+
+    **Important:** The development database now runs on port `5433` to avoid conflicts. If you already have a `.env` file, please update the `DATABASE_URL` to use `localhost:5433`.
 
 ### Step 2: Running the Development Environment
 
@@ -35,7 +37,7 @@ To start the application, simply run the `start_dev.sh` script from the project 
 ```
 
 **What does this script do?**
-1.  Starts the required background services (PostgreSQL & Redis) using Docker.
+1.  Starts the required background services (PostgreSQL on port 5433 & Redis) using Docker.
 2.  Waits a few seconds for them to initialize.
 3.  Starts the FastAPI server with auto-reload.
 
