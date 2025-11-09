@@ -1,4 +1,10 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import os
+
+# Build the path to the .env file.
+# This assumes the config.py file is in `BackEnd/app/core/`.
+# It navigates up two levels to the `BackEnd/` directory and looks for `.env`.
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
 
 class Settings(BaseSettings):
     # Base settings
@@ -31,6 +37,6 @@ class Settings(BaseSettings):
     # Sentry
     SENTRY_DSN: str | None = None
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8')
+    model_config = SettingsConfigDict(env_file=env_path, env_file_encoding='utf-8')
 
 settings = Settings()

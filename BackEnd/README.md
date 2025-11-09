@@ -12,7 +12,7 @@ This directory contains the Python/FastAPI backend for the Konekte application.
 
 ### 1. Install Dependencies
 
-Install all the required Python packages using the `requirements.txt` file. From the project root, run:
+Install all the required Python packages using the `requirements.txt` file (it's recommended to do this from the project root).
 
 ```bash
 pip install -r BackEnd/requirements.txt
@@ -20,24 +20,22 @@ pip install -r BackEnd/requirements.txt
 
 ### 2. Set Up Environment Variables
 
-Create a `.env` file in the `BackEnd/` directory by copying the example file.
+Create a `.env` file in this `BackEnd/` directory by copying the example file.
 
 ```bash
 # From the project root, run:
 cp BackEnd/.env.example BackEnd/.env
 ```
 
-Now, open the `BackEnd/.env` file and replace the placeholder values with your actual credentials.
+Now, open `BackEnd/.env` and fill in your actual credentials. The application is configured to find this file automatically.
 
 ### 3. Run the Database & Cache
 
-The project uses a local PostgreSQL instance and a Redis instance running in Docker. From the project root, run:
+The project uses a local PostgreSQL instance and a Redis instance running in Docker. You can start these services from the project root.
 
 ```bash
 docker-compose -f BackEnd/docker-compose.yml up -d
 ```
-
-This will start the necessary background services.
 
 ### 4. Run Database Migrations
 
@@ -51,21 +49,18 @@ _Note: Alembic is not yet configured in this phase, but this command will be use
 
 ### 5. Seed the Database (Optional)
 
-To populate your database with realistic test data, you can run the seeding script. This will create 50 fake users, profiles, photos, and interactions.
+To populate your database with test data, you can run the seeding script from the project root.
 
 ```bash
-# Make sure you are in the project's ROOT directory
 python -m BackEnd.seed_data
 ```
 
 ### 6. Run the Application
 
-**IMPORTANT: This command must be run from the root directory of the project, NOT from inside the `BackEnd` directory.**
+You can now start the FastAPI application. The `--app-dir` flag tells `uvicorn` where to find the `app` module.
 
-Once the database is running, you can start the FastAPI application. The `--app-dir` flag tells `uvicorn` where to find your application's code.
-
+**Run this command from the project's root directory:**
 ```bash
-# Make sure you are in the project's ROOT directory
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --app-dir BackEnd
 ```
 
