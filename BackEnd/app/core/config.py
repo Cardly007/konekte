@@ -34,9 +34,17 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str
     TWILIO_VERIFY_SERVICE_SID: str
 
+    # Firebase
+    FIREBASE_PROJECT_ID: str
+    FIREBASE_PRIVATE_KEY: str
+
     # Sentry
     SENTRY_DSN: str | None = None
 
-    model_config = SettingsConfigDict(env_file=env_path, env_file_encoding='utf-8')
+    model_config = SettingsConfigDict(
+        env_file=env_path,
+        env_file_encoding='utf-8',
+        extra='ignore'  # Ignore extra fields from the .env file
+    )
 
 settings = Settings()
