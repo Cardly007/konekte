@@ -2,78 +2,64 @@
 
 This directory contains the Python/FastAPI backend for the Konekte application.
 
-## Local Development Setup
+## 🚀 Quick Start (Recommended)
 
-### Step 1: Initial Configuration (Do this once)
+This project uses Docker to provide a consistent and easy-to-manage development environment.
 
-1.  **Install Dependencies**
-    From the project root, install all required Python packages.
-    ```bash
-    pip install -r BackEnd/requirements.txt
-    ```
-    *(Note: Re-run this command anytime you pull new changes to the project.)*
+### Prerequisites
+- Docker & Docker Compose
+- Python 3.10+
+- `pip` for dependency management
 
-2.  **Configure Your Environment**
-    Create your local environment file by copying the example.
-    ```bash
-    cp BackEnd/.env.example BackEnd/.env
-    ```
-    Now, open `BackEnd/.env` and configure the variables to match your setup.
+### Step 1: Install Dependencies
+This only needs to be done once. From the project root, run:
+```bash
+pip install -r BackEnd/requirements.txt
+```
+*(Remember to re-run this command if you pull new changes that modify this file.)*
+
+### Step 2: Start Everything
+Simply run the `start.sh` script from the project root.
+```bash
+./start.sh
+```
+**What does this script do?**
+1.  Creates a `.env` file from the example if it doesn't exist.
+2.  Stops and removes any old Docker containers to ensure a clean start.
+3.  Starts new containers for PostgreSQL and Redis.
+4.  Waits for them to initialize.
+5.  Starts the FastAPI server with auto-reload.
+
+The API will be available at `http://localhost:8000`.
 
 ---
 
-### Step 2: Running the Application
+## Manual Setup & Other Commands
 
-This project supports two primary ways of running the backend.
+### Environment Configuration
+The application is configured via the `BackEnd/.env` file. The `start.sh` script creates this file for you on the first run. You can edit it to change default passwords or connect to external services.
 
-#### Scenario A: Connecting to an Existing Database (Your Current Setup)
-
-If you already have your own PostgreSQL and Redis services running, this is the method for you.
-
-1.  **Configure Your `.env` File**
-    Make sure the variables in your `BackEnd/.env` file correctly point to your services.
-    - `DATABASE_URL`: Your full PostgreSQL connection string.
-    - `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`: Your Redis connection details. If your Redis has no password, leave `REDIS_PASSWORD` blank.
-
-2.  **Run the App**
-    Execute the startup script from the project root:
-    ```bash
-    ./start_dev.sh
-    ```
-
-#### Scenario B: Starting Fresh with Docker
-
-If you want to run the provided services, use Docker.
-
-1.  **Start Docker Services**
+### Running Commands Manually
+-   **Start Docker Services Only:**
     ```bash
     docker-compose -f BackEnd/docker-compose.yml up -d
     ```
-
-2.  **Run the App**
+-   **Stop Docker Services:**
     ```bash
-    ./start_dev.sh
+    docker-compose -f BackEnd/docker-compose.yml down
+    ```
+-   **Seed the Database:**
+    To populate the database with test data, run this command in a separate terminal:
+    ```bash
+    python -m BackEnd.seed_data
+    ```
+-   **Run the Server Only** (if Docker services are already running):
+    ```bash
+    uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --app-dir BackEnd
     ```
 
----
-
-## Troubleshooting
-
-### `Connection closed by server` or `Authentication required` (Redis Error)
-
-This error means your Redis instance requires a password, but the application is not providing the correct one.
-
-**Solution:**
-1.  Open your `BackEnd/.env` file.
-2.  Find the Redis configuration section.
-3.  Set `REDIS_PASSWORD` to your actual Redis password.
-    ```env
-    REDIS_HOST=localhost
-    REDIS_PORT=6379
-    REDIS_PASSWORD=your_actual_redis_password
-    ```
-4.  If your Redis has **no password**, make sure the line is empty:
-    ```env
-    REDIS_PASSWORD=
-    ```
-After saving the `.env` file, restart the application with `./start_dev.sh`.
+### Connecting to an External Database
+If you wish to use your own database instead of the one provided in Docker:
+1.  Stop the Docker services: `docker-compose -f BackEnd/docker-compose.yml down`
+2.  Edit your `BackEnd/.env` file and update `DATABASE_URL` and the `REDIS_*` variables to point to your external services.
+3.  Start the server manually: `uvicorn app.main:app ...`
