@@ -1,45 +1,46 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# Flutter
+#
+# See https://flutter.dev/docs/development/tools/vs-code#version-control
 
-# IntelliJ related
+# Misc
+.DS_Store
+.idea/
+.packages
+.project
+.vscode/
+build/
+coverage/
+doc/api/
 *.iml
 *.ipr
 *.iws
+
+# Xcode
+#
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+#
+# If you created your project with `flutter create -i swift`,
+# you can safely ignore the following `.xcworkspace` files.
+# They will be recreated automatically on build.
+# To learn more, visit https://flutter.dev/docs/development/ios-project-migration.
+.symlinks/
+Pods/
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+Flutter/ephemeral/
+Flutter/app.flx
+Flutter/flutter_export_environment.sh
+
+# Android
+#
+# It is recommended to not ignore the `*.gradle` files.
+# They are used by the Flutter tool and are generated from `pubspec.yaml`.
+android/app/src/main/assets/flutter_assets/
+android/key.properties
+android/local.properties
+
+# Rider
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Environment file
+.env

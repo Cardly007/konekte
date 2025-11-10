@@ -18,48 +18,45 @@ pip install -r BackEnd/requirements.txt
 ```
 *(Remember to re-run this command if you pull new changes that modify this file.)*
 
-### Step 2: Start Everything
+### Step 2: Configure Environment
+The `start.sh` script will create a `.env` file for you on its first run. Open `BackEnd/.env` and ensure the variables match your setup. For the Docker setup, the defaults are usually fine.
+
+### Step 3: Start Everything
 Simply run the `start.sh` script from the project root.
 ```bash
 ./start.sh
 ```
-**What does this script do?**
-1.  Creates a `.env` file from the example if it doesn't exist.
-2.  Stops and removes any old Docker containers to ensure a clean start.
-3.  Starts new containers for PostgreSQL and Redis.
-4.  Waits for them to initialize.
-5.  Starts the FastAPI server with auto-reload.
-
 The API will be available at `http://localhost:8000`.
+
+### Step 4: Apply Database Migrations
+After starting the services for the first time, you need to create the database tables. Open a **new terminal** and run the following command from the project root:
+```bash
+alembic -c BackEnd/alembic.ini upgrade head
+```
+Your database is now ready.
 
 ---
 
-## Manual Setup & Other Commands
+## Other Useful Commands
 
-### Environment Configuration
-The application is configured via the `BackEnd/.env` file. The `start.sh` script creates this file for you on the first run. You can edit it to change default passwords or connect to external services.
-
-### Running Commands Manually
--   **Start Docker Services Only:**
+-   **Seed the Database:** To populate the database with test data, run this command from the project root in a separate terminal:
     ```bash
-    docker-compose -f BackEnd/docker-compose.yml up -d
+    python -m BackEnd.seed_data
     ```
 -   **Stop Docker Services:**
     ```bash
     docker-compose -f BackEnd/docker-compose.yml down
     ```
--   **Seed the Database:**
-    To populate the database with test data, run this command in a separate terminal:
+-   **Creating a New Migration:** If you change the database models, you'll need to create a new migration script.
     ```bash
-    python -m BackEnd.seed_data
+    alembic -c BackEnd/alembic.ini revision --autogenerate -m "Your description of the change"
     ```
--   **Run the Server Only** (if Docker services are already running):
-    ```bash
-    uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --app-dir BackEnd
-    ```
+---
 
-### Connecting to an External Database
+## Manual Setup
+
 If you wish to use your own database instead of the one provided in Docker:
-1.  Stop the Docker services: `docker-compose -f BackEnd/docker-compose.yml down`
-2.  Edit your `BackEnd/.env` file and update `DATABASE_URL` and the `REDIS_*` variables to point to your external services.
-3.  Start the server manually: `uvicorn app.main:app ...`
+1.  Ensure your external services (PostgreSQL, Redis) are running.
+2.  Edit your `BackEnd/.env` file and update `DATABASE_URL` and the `REDIS_*` variables to point to your services.
+3.  Apply the database migrations: `alembic -c BackEnd/alembic.ini upgrade head`
+4.  Start the server manually: `uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --app-dir BackEnd`
