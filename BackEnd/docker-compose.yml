@@ -1,16 +1,28 @@
 # docker-compose.yml
 services:
   db:
-    image: postgres:15-alpine  # Ou postgis/postgis:15-3.3 pour PostGIS plus tard
+    image: postgres:15-alpine
     restart: always
     environment:
       POSTGRES_USER: konekte_user
       POSTGRES_PASSWORD: Nap_lite
       POSTGRES_DB: konekte_db
     ports:
-      - "5432:5432" # Mappe le port de ta machine au port du conteneur
+      - "5432:5432" # Mappe le port par défaut de PostgreSQL
     volumes:
-      - postgres_data:/var/lib/postgresql/data # Persiste les données
+      - postgres_data:/var/lib/postgresql/data
+
+  cache:
+    image: redis:6.2-alpine
+    restart: always
+    # Sets the password for Redis. The default is defined here.
+    # The value from .env will override this if provided.
+    command: redis-server --requirepass ${REDIS_PASSWORD:-a-secure-password-for-redis}
+    ports:
+      - "6379:6379"
+    volumes:
+      - cache_data:/data
 
 volumes:
   postgres_data:
+  cache_data:

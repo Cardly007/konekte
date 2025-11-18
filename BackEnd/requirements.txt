@@ -1,14 +1,32 @@
-# BackEnd/requirements.txt
+# Core FastAPI Framework
 fastapi
-uvicorn
-sqlmodel
-python-jose[cryptography] # Pour l'authentification JWT
-passlib[bcrypt]          # Pour le hachage de mot de passe (si tu ne l'utilises pas déjà, c'est recommandé)
+uvicorn[standard]
+
+# Database & Migrations
+sqlalchemy
+psycopg2-binary
+alembic
+
+# Caching & Rate Limiting
+redis
+fastapi-limiter
+
+# Configuration & Security
+pydantic[email]  # Includes email-validator
+pydantic-settings
+python-dotenv
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Realtime Chat
 websockets
 
-cloudinary        # Pour l'upload des médias
-python-dotenv     # Optionnel mais très recommandé pour gérer les clés secrètes
+# Third-Party Integrations
+cloudinary
+sentry-sdk[fastapi]
 
-# Nouvelles dépendances pour PostgreSQL et migrations
-psycopg2-binary          # Pilote pour PostgreSQL
-alembic                  # Outil de migration de base de données
+# Logging
+structlog
+
+# Utilities for Seeding
+Faker
